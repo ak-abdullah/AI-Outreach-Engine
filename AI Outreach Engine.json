@@ -1,0 +1,759 @@
+{
+  "name": "AI Outreach Engine",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "leads/process",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2960,
+        -352
+      ],
+      "id": "60e0be2d-e457-413e-a84e-82e4caffafb0",
+      "name": "Lead Input",
+      "webhookId": "81ea99cc-85a0-45e7-8321-c0534114b389"
+    },
+    {
+      "parameters": {
+        "url": "=https://r.jina.ai/https://{{ $json.body.domain }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2736,
+        -352
+      ],
+      "id": "22f6f5ca-00c9-4063-bd03-d7c210d30db9",
+      "name": "Jina Scraper",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://google.serper.dev/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"q\": \"{{ $('Lead Input').item.json.body.company_name }} funding news 2025 2026\",\n  \"num\": 5\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2304,
+        -352
+      ],
+      "id": "9241b3f1-918b-4c89-a8a2-773a795f1e40",
+      "name": "Serper News",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "K1MRHbYynxTndgm4",
+          "name": "Serper API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://api.hunter.io/v2/domain-search?domain={{ $('Lead Input').item.json.body.domain }}&limit=3",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2080,
+        -352
+      ],
+      "id": "e37fcac2-75b4-498a-9186-b7c0f85449d8",
+      "name": "Hunter Contact",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "f9vRM56ZDGRjicVf",
+          "name": "Hunter API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ba8c6a24-ef6c-46e8-9571-35fb328d9d6c",
+              "name": "company_name",
+              "value": "={{ $('Lead Input').item.json.body.company_name }}",
+              "type": "string"
+            },
+            {
+              "id": "cdb09d29-28d9-4d04-813b-261478102ed8",
+              "name": "domain",
+              "value": "={{ $('Lead Input').item.json.body.domain }}",
+              "type": "string"
+            },
+            {
+              "id": "fe9b7336-ea53-4e8e-a28c-eed5a1139074",
+              "name": "website_content",
+              "value": "={{ $('Jina Scraper').item.json.data }}",
+              "type": "string"
+            },
+            {
+              "id": "1c0172e8-a4ae-4b0e-8a19-9e862e95c57d",
+              "name": "recent_news",
+              "value": "={{ $('Serper News').item.json.organic }}",
+              "type": "string"
+            },
+            {
+              "id": "b1e433d1-2cd6-444b-b58a-8922c3f86b10",
+              "name": "decision_maker_name",
+              "value": "={{ $('Hunter Contact').item.json.data.emails[0].first_name + ' ' + $('Hunter Contact').item.json.data.emails[0].last_name }}",
+              "type": "string"
+            },
+            {
+              "id": "2eef6151-6255-4592-beba-bf58536b46c8",
+              "name": "decision_maker_title",
+              "value": "={{ $('Hunter Contact').item.json.data.emails[0].position }}",
+              "type": "string"
+            },
+            {
+              "id": "6866ff57-5651-45e5-b2bd-9ef8a60cbcd0",
+              "name": "decision_maker_email",
+              "value": "={{ $('Hunter Contact').item.json.data.emails[0].value }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1856,
+        -352
+      ],
+      "id": "a08a11ef-f68b-4021-a3db-f10e70c89ee9",
+      "name": "Data Normalizer"
+    },
+    {
+      "parameters": {
+        "content": "## Phase 1 — Intelligence Gathering\n**Webhook → Scrape website → Search news → Find contact → Normalize data** ",
+        "height": 464,
+        "width": 1332
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3072,
+        -656
+      ],
+      "id": "5955133a-8d06-4265-b092-0e7748f4117f",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"temperature\": 0.3,\n  \"max_tokens\": 800,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a strict B2B sales intelligence analyst. Return ONLY valid JSON. Score 0-39 for B2C companies like McDonalds, Walmart, Netflix. Score 70-100 only for B2B SaaS with 10-200 employees. Return: {\\\"icp_score\\\": 0, \\\"company_summary\\\": \\\"text\\\", \\\"top_3_pain_points\\\": [\\\"p1\\\",\\\"p2\\\",\\\"p3\\\"], \\\"personalization_hook\\\": \\\"text\\\", \\\"best_angle\\\": \\\"text\\\", \\\"timing_trigger\\\": \\\"text\\\", \\\"confidence\\\": \\\"high|medium|low\\\"}. IMPORTANT: Return raw JSON only. No markdown. No backticks. No json. Just the JSON object.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"={{ 'Company: ' + ($json.company_name || 'unknown') + ' Website: ' + JSON.stringify(($json.website_content || '').substring(0, 1500)).slice(1, -1) + ' Decision maker: ' + ($json.decision_maker_name || 'unknown') }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1264,
+        -832
+      ],
+      "id": "1587acec-8459-4e70-b081-64fd73fd89f9",
+      "name": "AI Analyzer",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "yDWWkucaIKOjY04Z",
+          "name": "Groq API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const content = $input.first().json.choices[0].message.content;\nconst cleaned = content.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\nconst parsed = JSON.parse(cleaned);\nreturn [{ json: parsed }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1024,
+        -832
+      ],
+      "id": "a6d6fa69-e247-49c6-b9df-7eeb6e5d2eb3",
+      "name": "Parse AI Response"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "496084b5-b6de-410c-9a1a-327b1c3802db",
+              "leftValue": "={{ $json.icp_score }}",
+              "rightValue": 60,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -816,
+        -832
+      ],
+      "id": "36700ba3-a047-4c9e-a37b-ad6f148c2f79",
+      "name": "ICP Score Filter"
+    },
+    {
+      "parameters": {
+        "content": "## Phase 2 — AI Analysis Layer\n**Groq AI analysis → Parse JSON → Filter by ICP score ≥ 60**",
+        "height": 416,
+        "width": 816,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1408,
+        -1088
+      ],
+      "id": "1ed14785-c688-4b87-9de8-259564da88d1",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"temperature\": 0.7,\n  \"max_tokens\": 1000,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are an expert B2B copywriter. Write outreach that feels human and specific, not templated. Never use phrases like 'I hope this finds you well', 'touching base', or 'synergy'. STRICT FORMATTING RULES: 1) You MUST separate every paragraph with TWO newlines: \\\\n\\\\n — never a single \\\\n. EXAMPLE of correct format: 'First paragraph text.\\\\n\\\\nSecond paragraph text.\\\\n\\\\nThird paragraph text.' 2) NEVER place a period, dot, dash, asterisk, or any symbol on its own line between paragraphs. 3) NEVER use any separator characters between paragraphs — only \\\\n\\\\n. 4) Every email must have exactly 5 paragraphs: opener, pain point, value proposition, social proof, CTA. 5) The sign-off MUST always be its own paragraph, never attached to any sentence. Always end with exactly: \\\\n\\\\nBest,\\\\nAbdullah Khalid. 6) Apply the same formatting rules to followup_email_1 and followup_email_2. 7) Do NOT start any field value with = or any special character. Return ONLY a raw JSON object, no markdown, no backticks, no extra text before or after. Exact structure: {\\\"subject_line\\\": \\\"string\\\", \\\"cold_email\\\": \\\"string\\\", \\\"linkedin_connection_note\\\": \\\"string max 200 chars\\\", \\\"followup_email_1\\\": \\\"string\\\", \\\"followup_email_2\\\": \\\"string\\\"}\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"={{ 'Write outreach for: Company: ' + $('Data Normalizer').item.json.company_name + ' Decision maker: ' + $('Data Normalizer').item.json.decision_maker_name + ', ' + $('Data Normalizer').item.json.decision_maker_title + ' Pain points: ' + $json.top_3_pain_points.join(', ') + ' Hook: ' + $json.personalization_hook + ' Best angle: ' + $json.best_angle + ' My service: AI automation systems that reduce manual sales work by 80%. My name: Abdullah Khalid.' }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -192,
+        -432
+      ],
+      "id": "8552186f-ad72-4231-bbe4-f3e5c36be7e0",
+      "name": "Outreach Generator",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "yDWWkucaIKOjY04Z",
+          "name": "Groq API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Phase 3 — Outreach Generation\n**Groq generates personalized email + LinkedIn + follow-ups** ",
+        "height": 336,
+        "width": 944,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        -608
+      ],
+      "id": "91b28eac-1763-48c3-ac84-6cafc8c9de02",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const content = $input.first().json.choices[0].message.content;\n\n// Only escape newlines inside string values, not structural ones\nlet result = '';\nlet inString = false;\nlet escape = false;\n\nfor (let i = 0; i < content.length; i++) {\n  const char = content[i];\n  \n  if (escape) {\n    result += char;\n    escape = false;\n    continue;\n  }\n  if (char === '\\\\' && inString) {\n    result += char;\n    escape = true;\n    continue;\n  }\n  if (char === '\"') {\n    inString = !inString;\n    result += char;\n    continue;\n  }\n  if (inString && char === '\\n') {\n    result += '\\\\n';\n    continue;\n  }\n  if (inString && char === '\\r') {\n    result += '\\\\r';\n    continue;\n  }\n  result += char;\n}\n\nconst parsed = JSON.parse(result);\nreturn [{ json: parsed }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        32,
+        -432
+      ],
+      "id": "e87416ad-fcea-450f-a32b-cc18381e81f3",
+      "name": "Parse Outreach"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1iTcRb_Jd22l1ASv6YYe2CUlWeQrE1Mp9GeOTN5AKBKo",
+          "mode": "list",
+          "cachedResultName": "AI Outreach Engine",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iTcRb_Jd22l1ASv6YYe2CUlWeQrE1Mp9GeOTN5AKBKo/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1iTcRb_Jd22l1ASv6YYe2CUlWeQrE1Mp9GeOTN5AKBKo/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ new Date().toISOString() }}",
+            "company_name": "={{ $('Data Normalizer').item.json.company_name }}",
+            "decision_maker": "={{ $('Data Normalizer').item.json.decision_maker_name }}",
+            "email": "={{ $('Data Normalizer').item.json.decision_maker_email }}",
+            "icp_score": "={{ $('Parse AI Response').item.json.icp_score }}",
+            "hook_used": "={{ $('Parse AI Response').item.json.personalization_hook }}",
+            "status": "={{ $('Data Normalizer').item.json.decision_maker_email ? 'sent' : 'no_contact_found' }}",
+            "email_sent": "={{ $('Data Normalizer').item.json.decision_maker_email ? true : false }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "company_name",
+              "displayName": "company_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "decision_maker",
+              "displayName": "decision_maker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "displayName": "email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "icp_score",
+              "displayName": "icp_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "hook_used",
+              "displayName": "hook_used",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email_sent",
+              "displayName": "email_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1216,
+        32
+      ],
+      "id": "97da644c-175b-4046-a103-900639ae7e57",
+      "name": "Log to Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "w9M2QvS1Qrx4PikG",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/1506954139635286057/36u-_TVeKX4LKO5AQCZyE-vweNGmw376STs0YdNq69SqGJTrJEVIumZSc63cfgYUCQCH",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": \"**🎯 New Lead Processed:** {{ $json.company_name }}\\n**Score:** {{ $json.icp_score }}/100\\n**Contact:** {{ $json.decision_maker }} — {{ $json.email }}\\n**Hook:** {{ $json.hook_used }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1440,
+        32
+      ],
+      "id": "52e929c2-ea5f-4db7-aad7-37a03603de50",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Data Normalizer').item.json.decision_maker_email\n }}",
+        "subject": "={{ $json.subject_line }}",
+        "emailType": "text",
+        "message": "={{ $json.cold_email.replace(/\\\\n/g, '\\n').replace(/\\nBest,/g, '\\n\\nBest,') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        992,
+        32
+      ],
+      "id": "4ef5374f-5855-4c11-9f3c-e7dd23eda4bb",
+      "name": "Send a message",
+      "webhookId": "8f691d0b-48ac-4998-ac09-65fcda0190c0",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "0VOfVRMKqM9sdEo4",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Phase 4 — Execution & Tracking\n**Send email → Log to Sheets → Discord alert**",
+        "height": 480,
+        "width": 720,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        912,
+        -288
+      ],
+      "id": "71045318-f60c-459f-aa26-f8246f9c8eb9",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f9fcf55a-09d1-4fda-93a4-fb4b03744823",
+              "leftValue": "={{ $('Data Normalizer').item.json.decision_maker_email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        256,
+        -432
+      ],
+      "id": "cee5ec85-d3ed-40d3-aa19-05819f69918e",
+      "name": "Email Guard"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "750bf3f3-d6eb-4fe3-bb96-11f81cd88d9d",
+              "leftValue": "={{ $json.error.message }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2528,
+        -352
+      ],
+      "id": "7dfab498-61b0-4b3c-bcf0-5f1635acd0c0",
+      "name": "If"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Lead Input": {
+      "main": [
+        [
+          {
+            "node": "Jina Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jina Scraper": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Serper News": {
+      "main": [
+        [
+          {
+            "node": "Hunter Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hunter Contact": {
+      "main": [
+        [
+          {
+            "node": "Data Normalizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Normalizer": {
+      "main": [
+        [
+          {
+            "node": "AI Analyzer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Analyzer": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "ICP Score Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ICP Score Filter": {
+      "main": [
+        [
+          {
+            "node": "Outreach Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Outreach Generator": {
+      "main": [
+        [
+          {
+            "node": "Parse Outreach",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Outreach": {
+      "main": [
+        [
+          {
+            "node": "Email Guard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Sheets": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Log to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Guard": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Serper News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "9e3abe27-dd9d-4738-8e23-eb4b4ab4f39d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "30b3835dc9dbf5d3e41029cfcc260b7f1c1645829ccdc12df2bb7fc3b0a7bd55"
+  },
+  "id": "dReAxhDXVbtXMosC",
+  "tags": []
+}
